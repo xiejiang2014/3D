@@ -1,16 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Media3D;
 
@@ -24,42 +15,8 @@ namespace Wpf3DCubeWindow
         #region Classes
 
         /// <summary>
-        /// A class which represents the quaternion rotation needed to display
-        /// a given cube side based on the initially displayed side being the 'front'.
+        /// 面位
         /// </summary>
-        private class CubeRotation
-        {
-            public CubeSide CubeSide { get; set; }
-            public Quaternion Quaternion { get; set; }
-        }
-
-        #endregion Classes
-
-
-        #region Static Variables
-
-        private static CubeRotation _cubeFrontSideFacing;
-        private static CubeRotation _cubeBackSideFacing;
-        private static CubeRotation _cubeLeftSideFacing;
-        private static CubeRotation _cubeRightSideFacing;
-        private static CubeRotation _cubeTopSideFacing;
-        private static CubeRotation _cubeBottomSideFacing;
-        private static Dictionary<CubeSide, Dictionary<Direction, CubeRotation>> _possibleRotationMatrix;
-
-        #endregion Static Variables
-
-
-        #region Member Variables
-
-        private CubeRotation _currentCubeRotation;
-        Point _originalMousePosition;
-        Boolean _isRotating;
-
-        #endregion Member Variables
-
-
-        #region Enumerations
-
         private enum CubeSide
         {
             Front,
@@ -70,6 +27,9 @@ namespace Wpf3DCubeWindow
             Bottom
         }
 
+        /// <summary>
+        /// 方向
+        /// </summary>
         private enum Direction
         {
             None,
@@ -79,7 +39,50 @@ namespace Wpf3DCubeWindow
             West
         }
 
-        #endregion Enumerations
+        /// <summary>
+        /// A class which represents the quaternion rotation needed to display
+        /// a given cube side based on the initially displayed side being the 'front'.
+        ///
+        /// 一个表示四元数旋转的类，该旋转基于最初显示的侧面为“正面”来显示给定的立方体侧面。
+        /// </summary>
+        private class CubeRotation
+        {
+            public CubeSide CubeSide { get; set; }
+
+            /// <summary>
+            /// 四元数(System.Windows.Media.Media3D.Quaternion)
+            /// </summary>
+            public Quaternion Quaternion { get; set; }
+        }
+
+        #endregion Classes
+
+        
+        //6个面
+        private static CubeRotation _cubeFrontSideFacing;
+        private static CubeRotation _cubeBackSideFacing;
+        private static CubeRotation _cubeLeftSideFacing;
+        private static CubeRotation _cubeRightSideFacing;
+        private static CubeRotation _cubeTopSideFacing;
+        private static CubeRotation _cubeBottomSideFacing;
+
+        /// <summary>
+        /// 两层字典  第一层为位面,第二层为方向  得到 CubeRotation 对象
+        /// </summary>
+        private static Dictionary<CubeSide, Dictionary<Direction, CubeRotation>> _possibleRotationMatrix;
+        
+
+        
+
+        /// <summary>
+        /// 当前面
+        /// </summary>
+        private CubeRotation _currentCubeRotation;
+
+        Point _originalMousePosition;
+        Boolean _isRotating;
+        
+        
 
 
         #region Constructor
@@ -93,6 +96,7 @@ namespace Wpf3DCubeWindow
             // quaternion rotation needed to display the side based on the
             // intially displayed side being the 'front'.
 
+            //为立方体的每一面创建一个类，其中包含基于初始显示的一面为“正面”来显示该面所需的四元数旋转。
             _cubeFrontSideFacing = new CubeRotation()
             {
                 CubeSide = CubeSide.Front,
@@ -133,6 +137,7 @@ namespace Wpf3DCubeWindow
             // For each cube side that could be facing there are 4 possible directions (based on user dragging a mouse)
             // to rotate the cube.
             // Store this as a collection for easy use later on.
+            // 对于可能面向的每个立方体面，有 4 个可能的方向（基于用户拖动鼠标）来旋转立方体。将其存储为一个集合，以便以后使用。
 
             _possibleRotationMatrix = new Dictionary<CubeSide, Dictionary<Direction, CubeRotation>>();
 
@@ -240,6 +245,7 @@ namespace Wpf3DCubeWindow
         private void Window_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             // Get the original mouse position as the user starts dragging...
+            //拖放的起始点
             _originalMousePosition = e.GetPosition(this.CubeV3D);
         }
 
@@ -251,12 +257,14 @@ namespace Wpf3DCubeWindow
         private void Window_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             // Get the finishing mouse position (when the user has finished dragging)
+            //拖放的终止点
             Point newPosition = e.GetPosition(this.CubeV3D);
 
             Double deltaX = newPosition.X - _originalMousePosition.X;
             Double deltaY = newPosition.Y - _originalMousePosition.Y;
 
             // Don't bother doing anything if the user has hardly moved the mouse...
+            //如果用户几乎没有移动鼠标，请不要费心做任何事情......
             if (Math.Abs(deltaX) <= SystemParameters.MinimumHorizontalDragDistance &&
                     Math.Abs(deltaY) <= SystemParameters.MinimumVerticalDragDistance)
             {
@@ -293,6 +301,7 @@ namespace Wpf3DCubeWindow
                 directionToRotate = Direction.West;
             }
 
+            //到此得到了旋转的方向
             RotateCube(directionToRotate);
         }
 
@@ -322,19 +331,26 @@ namespace Wpf3DCubeWindow
                 animation.From = _possibleRotationMatrix[_currentCubeRotation.CubeSide][Direction.None].Quaternion;
                 // The To quaternion is the one required to display the next cube side based on the original side being the 'front'
                 animation.To = _possibleRotationMatrix[_currentCubeRotation.CubeSide][direction].Quaternion;
+
                 animation.Duration = new Duration(new TimeSpan(0, 0, 0, 0, 650));
+
                 _isRotating = true;
                 
                 animation.Completed += (o, e) =>
                 {
                     _isRotating = false;
+                    //动画结束后重新开始命中测试
                     ToggleVisualHitTesting(true);
+
+                    //记录当前面
                     _currentCubeRotation = _possibleRotationMatrix[_currentCubeRotation.CubeSide][direction];
                 };
 
                 // Temporarily remove hit testing to make things a but smoother
+                //在旋转时禁用命中测试
                 ToggleVisualHitTesting(false);
 
+                //开始转动动画
                 this.CameraRotation.BeginAnimation(QuaternionRotation3D.QuaternionProperty, animation);
             }
         }
